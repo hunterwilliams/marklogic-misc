@@ -129,7 +129,7 @@ declare function local:permissions-to-permissions($holder){
     return xdmp:permission($p/role-name,$p/capability)
 };
 
-declare function local:create-user($user,$skip-if-dne){
+declare function local:create-user($user,$skip-if-dne,$only-add-user-roles){
   if (fn:not(sec:user-exists($user/name))) then 
       if ($skip-if-dne) then
         fn:concat("user dne - not making:",$user/name)
@@ -139,13 +139,17 @@ declare function local:create-user($user,$skip-if-dne){
         return fn:concat("user created:",$user/name)
   else
     let $_ := sec:user-set-description($user/name, $user/description)
-    let $_ := sec:user-set-roles($user/name, $user/role-name)
+    let $_ := 
+      if ($only-add-user-roles) then
+        sec:user-set-roles($user/name, $user/role-name)
+      else
+        sec:user-add-roles($user/name, $user/role-name)
     let $_ := sec:user-set-default-collections($user/name, $user/collection)
     let $_ := sec:user-set-default-permissions($user/name, local:permissions-to-permissions($user))
     return ()
 };
 
-declare function local:load-security($security,$skip-creating-users){
+declare function local:load-security($security,$skip-creating-users,$only-add-user-roles){
   let $roles-created := local:load-security-create-roles($security)
   let $roles-modified := 
     for $r in $security//role
@@ -153,7 +157,7 @@ declare function local:load-security($security,$skip-creating-users){
 
   let $users-created := 
     for $u in $security//user
-      return local:create-user($u,$skip-creating-users)
+      return local:create-user($u,$skip-creating-users,$only-add-user-roles)
 
   return ($roles-created,$roles-modified,$users-created)
 };
