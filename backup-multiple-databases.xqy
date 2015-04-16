@@ -10,10 +10,12 @@ declare variable $BACKUP-DIR as xs:string := "/data/MarkLogic/ManualBackups/";
 declare variable $DEBUG as xs:boolean := fn:true();
 
 declare function local:backup($db as xs:string){
-  try { let $backup-id := xdmp:database-backup(xdmp:database-forests(xdmp:database($db)),fn:concat($BACKUP-DIR,$db))
+  try { 
+        let $backup-directory := fn:concat($BACKUP-DIR,$db)
+        let $backup-id := xdmp:database-backup(xdmp:database-forests(xdmp:database($db)),$backup-directory)
         return fn:concat($db,":",$backup-id)
       }
-catch($e) { fn:concat($db," failed to backup - (",$e//e:code,":",$e//e:message,")") }
+  catch($e) { fn:concat($db," failed to backup - (",$e//e:code,":",$e//e:message,")") }
 };
 
 let $skip-dbs := for $fix-case in $DBS-TO-IGNORE return fn:lower-case($fix-case)
